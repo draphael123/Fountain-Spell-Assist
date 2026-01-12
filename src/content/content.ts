@@ -1306,10 +1306,21 @@ function setupEventListeners(): void {
 // Initialize
 // ============================================================================
 
+// Immediate log to verify script is loaded
+console.log('FSA: Content script file loaded');
+
 // Run initialization when DOM is ready
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initialize);
+  document.addEventListener('DOMContentLoaded', () => {
+    console.log('FSA: DOMContentLoaded fired');
+    initialize().catch((error) => {
+      console.error('FSA: Initialization failed:', error);
+    });
+  });
 } else {
-  initialize();
+  console.log('FSA: DOM already ready, initializing immediately');
+  initialize().catch((error) => {
+    console.error('FSA: Initialization failed:', error);
+  });
 }
 
