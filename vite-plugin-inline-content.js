@@ -110,14 +110,39 @@ export default function inlineContentScript() {
       
       // Final cleanup - remove any remaining import/export statements
       mergedCode = mergedCode.replace(/^import\s+.*?from\s+['"].*?['"];?\s*$/gm, '');
+      mergedCode = mergedCode.replace(/import\s+.*?from\s+['"].*?['"];?\s*/g, '');
       mergedCode = mergedCode.replace(/^export\s+.*?from\s+['"].*?['"];?\s*$/gm, '');
+      
+      // Remove all export statements (comprehensive cleanup)
+      // Remove export { ... } blocks (multiline, handles nested braces)
+      mergedCode = mergedCode.replace(/export\s*\{[^}]*\};?\s*/gs, '');
+      // Remove export default statements
+      mergedCode = mergedCode.replace(/export\s+default\s+.*?;?\s*/g, '');
+      // Remove export const/function/class/let/var declarations
+      mergedCode = mergedCode.replace(/^export\s+(const|function|class|let|var)\s+/gm, '$1 ');
+      // Remove any remaining export keywords
+      mergedCode = mergedCode.replace(/^export\s+/gm, '');
+      
+      // Remove module preload polyfill (not needed for content scripts)
+      // The polyfill starts with "(function polyfill()" and ends with "})();"
+      const polyfillStart = mergedCode.indexOf('(function polyfill()');
+      if (polyfillStart !== -1) {
+        const polyfillEnd = mergedCode.indexOf('})();', polyfillStart);
+        if (polyfillEnd !== -1) {
+          // Remove the polyfill and any leading whitespace/newlines
+          const beforePolyfill = mergedCode.substring(0, polyfillStart).replace(/\n\s*$/, '');
+          const afterPolyfill = mergedCode.substring(polyfillEnd + 6).replace(/^\s*\n/, '');
+          mergedCode = beforePolyfill + (beforePolyfill && afterPolyfill ? '\n' : '') + afterPolyfill;
+          console.log('FSA Plugin: Removed module preload polyfill');
+        }
+      }
       
       // Update content.js
       contentEntry.code = mergedCode;
       contentEntry.imports = [];
       contentEntry.dynamicImports = [];
       
-      console.log('FSA Plugin: Content script inlined successfully');
+      console.log('FSA Plugin: Content script inlined successfully - all exports removed');
     },
   };
 }
