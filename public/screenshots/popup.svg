@@ -1,0 +1,27 @@
+<svg width="400" height="500" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="400" height="500" fill="#1a1a1a"/>
+  
+  <!-- Header -->
+  <rect width="400" height="60" fill="#111111"/>
+  <text x="200" y="40" font-family="Inter, sans-serif" font-size="18" font-weight="700" fill="#fafafa" text-anchor="middle">Fountain Spell Assist</text>
+  
+  <!-- Toggle Section -->
+  <rect x="20" y="80" width="360" height="80" rx="8" fill="#0a0a0a" stroke="#333" stroke-width="1"/>
+  <text x="40" y="110" font-family="Inter, sans-serif" font-size="14" font-weight="600" fill="#fafafa">Enable for example.com</text>
+  <circle cx="340" cy="120" r="16" fill="#22c55e"/>
+  <circle cx="340" cy="120" r="12" fill="#1a1a1a"/>
+  
+  <!-- Statistics -->
+  <rect x="20" y="180" width="360" height="120" rx="8" fill="#0a0a0a" stroke="#333" stroke-width="1"/>
+  <text x="40" y="210" font-family="Inter, sans-serif" font-size="12" font-weight="600" fill="#f97316">Statistics</text>
+  <text x="40" y="240" font-family="JetBrains Mono, monospace" font-size="16" fill="#f97316">1,234</text>
+  <text x="200" y="240" font-family="JetBrains Mono, monospace" font-size="16" fill="#f97316">567</text>
+  <text x="40" y="270" font-family="Inter, sans-serif" font-size="10" fill="#888">Words Checked</text>
+  <text x="200" y="270" font-family="Inter, sans-serif" font-size="10" fill="#888">Corrections</text>
+  
+  <!-- Options Link -->
+  <rect x="20" y="320" width="360" height="50" rx="8" fill="#0a0a0a" stroke="#333" stroke-width="1"/>
+  <text x="200" y="350" font-family="Inter, sans-serif" font-size="13" fill="#888" text-anchor="middle">⚙️ Options</text>
+</svg>
+

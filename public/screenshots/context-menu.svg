@@ -1,0 +1,34 @@
+<svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="400" height="300" fill="#1a1a1a"/>
+  
+  <!-- Text with misspelling -->
+  <text x="50" y="80" font-family="Inter, sans-serif" font-size="18" fill="#fafafa">This is a misspelled</text>
+  <text x="50" y="110" font-family="Inter, sans-serif" font-size="18" fill="#c53030">word</text>
+  <line x1="50" y1="115" x2="100" y2="115" stroke="#c53030" stroke-width="2" stroke-dasharray="3,3"/>
+  
+  <!-- Context Menu -->
+  <rect x="200" y="140" width="180" height="140" rx="6" fill="#1a1a1a" stroke="#333" stroke-width="1"/>
+  
+  <!-- Word label -->
+  <rect x="200" y="140" width="180" height="30" fill="#111111"/>
+  <text x="210" y="160" font-family="Inter, sans-serif" font-size="12" font-weight="600" fill="#c53030">word</text>
+  
+  <!-- Suggestions -->
+  <rect x="200" y="170" width="180" height="30" fill="#2a2a2a"/>
+  <text x="210" y="190" font-family="Inter, sans-serif" font-size="13" fill="#fafafa">→ ward</text>
+  
+  <rect x="200" y="200" width="180" height="30" fill="#2a2a2a"/>
+  <text x="210" y="220" font-family="Inter, sans-serif" font-size="13" fill="#fafafa">→ work</text>
+  
+  <!-- Divider -->
+  <line x1="200" y1="230" x2="380" y2="230" stroke="#333" stroke-width="1"/>
+  
+  <!-- Actions -->
+  <rect x="200" y="230" width="180" height="25" fill="#2a2a2a"/>
+  <text x="210" y="247" font-family="Inter, sans-serif" font-size="12" fill="#888">🚫 Ignore</text>
+  
+  <rect x="200" y="255" width="180" height="25" fill="#2a2a2a"/>
+  <text x="210" y="272" font-family="Inter, sans-serif" font-size="12" fill="#888">📖 Add to Dictionary</text>
+</svg>
+
