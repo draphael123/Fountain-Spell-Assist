@@ -13,6 +13,7 @@ import {
   GlobalSettings,
   SiteSettings,
   DictionaryEntry,
+  Statistics,
 } from '../shared/types';
 import {
   getGlobalSettings,
@@ -24,7 +25,10 @@ import {
   removeFromDictionary,
   importDictionary,
   exportDictionary,
+  getStatistics,
+  updateStatistics,
 } from '../shared/storage';
+import { DEFAULT_STATISTICS } from '../shared/types';
 
 /**
  * Handle incoming messages from popup, options, or content scripts
@@ -86,6 +90,16 @@ async function handleMessage(
       case 'EXPORT_DICTIONARY': {
         const words = await exportDictionary();
         return { success: true, data: words };
+      }
+
+      case 'GET_STATISTICS': {
+        const stats = await getStatistics();
+        return { success: true, data: stats };
+      }
+
+      case 'RESET_STATISTICS': {
+        const stats = await updateStatistics({ ...DEFAULT_STATISTICS, lastReset: Date.now() });
+        return { success: true, data: stats };
       }
 
       default:

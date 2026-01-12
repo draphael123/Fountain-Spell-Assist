@@ -9,6 +9,10 @@
  */
 
 import { findMisspellings, Misspelling } from '../shared/dictionary';
+import { findGrammarErrors, grammarErrorToMisspelling } from '../shared/grammar';
+import { incrementWordsChecked, incrementMisspellingsFound, incrementCorrectionsMade, incrementWordsAdded } from '../shared/statistics';
+import { setupSpellCheckShortcuts, handleKeyboardEvent } from '../shared/keyboard';
+import { showToast } from '../shared/toast';
 import { GlobalSettings, SiteSettings, STORAGE_KEYS, DEFAULT_GLOBAL_SETTINGS, DEFAULT_SITE_SETTINGS } from '../shared/types';
 
 // ============================================================================
@@ -57,11 +61,22 @@ async function initialize(): Promise<void> {
   // Set up observers and listeners
   setupMutationObserver();
   setupEventListeners();
+  setupKeyboardShortcuts();
   
   // Scan existing editable fields
   scanForEditableFields();
   
   console.log('FSA: Content script initialized');
+}
+
+/**
+ * Setup keyboard shortcuts
+ */
+async function setupKeyboardShortcuts(): Promise<void> {
+  await setupSpellCheckShortcuts();
+  document.addEventListener('keydown', (event) => {
+    handleKeyboardEvent(event);
+  }, true);
 }
 
 /**
@@ -201,7 +216,7 @@ function isSensitiveField(element: HTMLElement): boolean {
 }
 
 /**
- * Scan the page for editable fields
+ * Scan the page for editable fields (including shadow DOM and iframes)
  */
 function scanForEditableFields(): void {
   // Find input and textarea elements
@@ -217,6 +232,71 @@ function scanForEditableFields(): void {
   contentEditables.forEach((el) => {
     if (el instanceof HTMLElement && isEditableField(el)) {
       attachToField(el);
+    }
+  });
+  
+  // Scan shadow DOM
+  scanShadowDOM(document.body);
+  
+  // Scan iframes (with permission)
+  scanIframes();
+}
+
+/**
+ * Scan shadow DOM for editable fields
+ */
+function scanShadowDOM(root: Node): void {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT);
+  let node: Node | null;
+  
+  while ((node = walker.nextNode())) {
+    const element = node as Element;
+    
+    // Check if element has shadow root
+    if (element.shadowRoot) {
+      // Scan shadow root
+      const shadowInputs = element.shadowRoot.querySelectorAll('input, textarea, [contenteditable="true"]');
+      shadowInputs.forEach((el) => {
+        if (el instanceof HTMLElement && isEditableField(el)) {
+          attachToField(el);
+        }
+      });
+      
+      // Recursively scan shadow DOM
+      scanShadowDOM(element.shadowRoot);
+    }
+    
+    // Check for editable fields in regular DOM
+    if (element instanceof HTMLElement) {
+      if (isEditableField(element)) {
+        attachToField(element);
+      }
+    }
+  }
+}
+
+/**
+ * Scan iframes for editable fields
+ */
+function scanIframes(): void {
+  const iframes = document.querySelectorAll('iframe');
+  iframes.forEach((iframe) => {
+    try {
+      // Try to access iframe content (may fail due to CORS)
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (iframeDoc) {
+        const inputs = iframeDoc.querySelectorAll('input, textarea, [contenteditable="true"]');
+        inputs.forEach((el) => {
+          if (el instanceof HTMLElement && isEditableField(el)) {
+            attachToField(el);
+          }
+        });
+        
+        // Also scan shadow DOM in iframe
+        scanShadowDOM(iframeDoc.body);
+      }
+    } catch (e) {
+      // CORS or other security restriction - skip this iframe
     }
   });
 }
@@ -283,6 +363,40 @@ function handleInput(event: Event): void {
   const state = fieldStates.get(element);
   if (!state) return;
   
+  // Auto-correct on space/enter if enabled
+  if (globalSettings.autoCorrect && state.misspellings.length > 0) {
+    const text = getFieldText(element);
+    const lastChar = text[text.length - 1];
+    
+    // Check if user just typed space or enter
+    if (lastChar === ' ' || lastChar === '\n') {
+      // Find the most recent misspelling before the cursor
+      const cursorPos = element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement
+        ? element.selectionStart || text.length
+        : text.length;
+      
+      // Find misspelling that ends just before cursor
+      for (const misspelling of state.misspellings) {
+        if (misspelling.endIndex <= cursorPos && misspelling.endIndex >= cursorPos - 5) {
+          // Auto-correct if there's a good suggestion
+          if (misspelling.suggestions.length > 0) {
+            const suggestion = misspelling.suggestions[0];
+            if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
+              const newText = text.substring(0, misspelling.startIndex) + 
+                            suggestion + 
+                            text.substring(misspelling.endIndex);
+              element.value = newText;
+              element.setSelectionRange(misspelling.startIndex + suggestion.length, misspelling.startIndex + suggestion.length);
+              element.dispatchEvent(new Event('input', { bubbles: true }));
+              incrementCorrectionsMade(1).catch(() => {});
+            }
+            break;
+          }
+        }
+      }
+    }
+  }
+  
   scheduleSpellCheck(state);
 }
 
@@ -323,7 +437,7 @@ function scheduleSpellCheck(state: FieldState): void {
   }
   
   state.debounceTimer = setTimeout(() => {
-    performSpellCheck(state);
+    performSpellCheck(state).catch(() => {});
   }, DEBOUNCE_MS);
 }
 
@@ -340,7 +454,7 @@ function getFieldText(element: HTMLElement): string {
 /**
  * Perform spell checking on a field
  */
-function performSpellCheck(state: FieldState): void {
+async function performSpellCheck(state: FieldState): Promise<void> {
   if (!isEnabled() || !globalSettings.showUnderlines) {
     clearHighlights(state);
     return;
@@ -352,13 +466,32 @@ function performSpellCheck(state: FieldState): void {
   if (text === state.lastText) return;
   state.lastText = text;
   
+  // Count words for statistics
+  const wordCount = text.split(/\s+/).filter(w => w.length > 0).length;
+  if (wordCount > 0) {
+    incrementWordsChecked(wordCount).catch(() => {});
+  }
+  
   // Find misspellings
   const allMisspellings = findMisspellings(text, customDictionaryWords);
+  
+  // Find grammar errors if enabled
+  if (globalSettings.grammarCheck) {
+    const grammarErrors = findGrammarErrors(text);
+    for (const error of grammarErrors) {
+      allMisspellings.push(grammarErrorToMisspelling(error));
+    }
+  }
   
   // Filter out ignored words
   state.misspellings = allMisspellings.filter(
     (m) => !ignoredWords.has(m.word.toLowerCase())
   );
+  
+  // Update statistics
+  if (state.misspellings.length > 0) {
+    incrementMisspellingsFound(state.misspellings.length).catch(() => {});
+  }
   
   // Update highlights
   updateHighlights(state);
@@ -447,8 +580,19 @@ function updateContentEditableHighlights(state: FieldState): void {
       highlight.dataset.word = misspelling.word;
       highlight.dataset.suggestions = JSON.stringify(misspelling.suggestions);
       
+      // Accessibility
+      highlight.setAttribute('role', 'button');
+      highlight.setAttribute('aria-label', `Misspelled word: ${misspelling.word}. Right-click for suggestions.`);
+      highlight.setAttribute('tabindex', '0');
+      
       highlight.addEventListener('contextmenu', handleHighlightContextMenu);
       highlight.addEventListener('click', handleHighlightClick);
+      highlight.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          showContextMenu(e.clientX || 0, e.clientY || 0, highlight);
+        }
+      });
       
       state.container.appendChild(highlight);
     }
@@ -646,8 +790,19 @@ function updateInputHighlights(state: FieldState): void {
     highlight.dataset.start = misspelling.startIndex.toString();
     highlight.dataset.end = misspelling.endIndex.toString();
     
+    // Accessibility
+    highlight.setAttribute('role', 'button');
+    highlight.setAttribute('aria-label', `Misspelled word: ${misspelling.word}. Right-click for suggestions.`);
+    highlight.setAttribute('tabindex', '0');
+    
     highlight.addEventListener('contextmenu', handleHighlightContextMenu);
     highlight.addEventListener('click', handleHighlightClick);
+    highlight.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        showContextMenu(e.clientX || 0, e.clientY || 0, highlight);
+      }
+    });
     
     state.container.appendChild(highlight);
   }
@@ -704,6 +859,8 @@ function showContextMenu(x: number, y: number, highlightElement: HTMLElement): v
   const menu = document.createElement('div');
   menu.id = CONTEXT_MENU_ID;
   menu.className = 'fsa-context-menu';
+  menu.setAttribute('role', 'menu');
+  menu.setAttribute('aria-label', 'Spell check suggestions');
   
   // Show misspelled word
   const wordLabel = document.createElement('div');
@@ -722,9 +879,19 @@ function showContextMenu(x: number, y: number, highlightElement: HTMLElement): v
       const item = document.createElement('div');
       item.className = 'fsa-context-menu-item fsa-context-menu-suggestion';
       item.textContent = suggestion;
+      item.setAttribute('role', 'menuitem');
+      item.setAttribute('tabindex', '0');
+      item.setAttribute('aria-label', `Replace with ${suggestion}`);
       item.addEventListener('click', () => {
         applySuggestion(highlightElement, suggestion);
         hideContextMenu();
+      });
+      item.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          applySuggestion(highlightElement, suggestion);
+          hideContextMenu();
+        }
       });
       menu.appendChild(item);
     }
@@ -744,9 +911,19 @@ function showContextMenu(x: number, y: number, highlightElement: HTMLElement): v
   const ignoreItem = document.createElement('div');
   ignoreItem.className = 'fsa-context-menu-item fsa-context-menu-action';
   ignoreItem.innerHTML = `<span class="fsa-context-menu-icon">🚫</span> Ignore`;
+  ignoreItem.setAttribute('role', 'menuitem');
+  ignoreItem.setAttribute('tabindex', '0');
+  ignoreItem.setAttribute('aria-label', 'Ignore this word for this session');
   ignoreItem.addEventListener('click', () => {
     ignoreWord(word);
     hideContextMenu();
+  });
+  ignoreItem.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      ignoreWord(word);
+      hideContextMenu();
+    }
   });
   menu.appendChild(ignoreItem);
   
@@ -754,29 +931,56 @@ function showContextMenu(x: number, y: number, highlightElement: HTMLElement): v
   const addItem = document.createElement('div');
   addItem.className = 'fsa-context-menu-item fsa-context-menu-action';
   addItem.innerHTML = `<span class="fsa-context-menu-icon">📖</span> Add to Dictionary`;
+  addItem.setAttribute('role', 'menuitem');
+  addItem.setAttribute('tabindex', '0');
+  addItem.setAttribute('aria-label', `Add ${word} to custom dictionary`);
   addItem.addEventListener('click', () => {
     addWordToDictionary(word);
     hideContextMenu();
+  });
+  addItem.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      addWordToDictionary(word);
+      hideContextMenu();
+    }
   });
   menu.appendChild(addItem);
   
   // Position menu
   document.body.appendChild(menu);
   
-  // Adjust position if menu would go off screen
+  // Adjust position if menu would go off screen (improved positioning)
   const menuRect = menu.getBoundingClientRect();
   const viewportWidth = window.innerWidth;
   const viewportHeight = window.innerHeight;
+  const padding = 10;
   
   let menuX = x;
   let menuY = y;
   
-  if (x + menuRect.width > viewportWidth) {
-    menuX = viewportWidth - menuRect.width - 10;
+  // Horizontal positioning
+  if (x + menuRect.width + padding > viewportWidth) {
+    // Try to position to the left of cursor
+    menuX = Math.max(padding, x - menuRect.width - padding);
+    // If still doesn't fit, align to right edge
+    if (menuX + menuRect.width > viewportWidth) {
+      menuX = viewportWidth - menuRect.width - padding;
+    }
+  } else {
+    menuX = x + padding;
   }
   
-  if (y + menuRect.height > viewportHeight) {
-    menuY = y - menuRect.height;
+  // Vertical positioning
+  if (y + menuRect.height + padding > viewportHeight) {
+    // Try to position above cursor
+    menuY = Math.max(padding, y - menuRect.height - padding);
+    // If still doesn't fit, align to bottom edge
+    if (menuY + menuRect.height > viewportHeight) {
+      menuY = viewportHeight - menuRect.height - padding;
+    }
+  } else {
+    menuY = y + padding;
   }
   
   menu.style.left = `${menuX}px`;
@@ -818,7 +1022,7 @@ function handleDocumentKeydown(event: KeyboardEvent): void {
 /**
  * Apply a suggestion to replace misspelled word
  */
-function applySuggestion(highlightElement: HTMLElement, suggestion: string): void {
+async function applySuggestion(highlightElement: HTMLElement, suggestion: string): Promise<void> {
   // Find the field this highlight belongs to
   const container = highlightElement.parentElement;
   if (!container) return;
@@ -837,8 +1041,16 @@ function applySuggestion(highlightElement: HTMLElement, suggestion: string): voi
           const end = parseInt(endStr);
           const text = element.value;
           element.value = text.substring(0, start) + suggestion + text.substring(end);
-          // Trigger input event for any listeners
-          element.dispatchEvent(new Event('input', { bubbles: true }));
+          
+      // Update cursor position
+      const newCursorPos = start + suggestion.length;
+      element.setSelectionRange(newCursorPos, newCursorPos);
+      
+      // Trigger input event for any listeners
+      element.dispatchEvent(new Event('input', { bubbles: true }));
+      
+      // Show toast notification
+      showToast(`Replaced "${word}" with "${suggestion}"`, 'success', 2000);
         }
       } else if (element.isContentEditable) {
         // For contenteditable, find and replace the word
@@ -847,6 +1059,9 @@ function applySuggestion(highlightElement: HTMLElement, suggestion: string): voi
         element.innerHTML = newHtml;
         element.dispatchEvent(new Event('input', { bubbles: true }));
       }
+      
+      // Update statistics
+      incrementCorrectionsMade(1).catch(() => {});
       
       // Re-run spell check
       scheduleSpellCheck(state);
@@ -882,12 +1097,19 @@ async function addWordToDictionary(word: string): Promise<void> {
     await chrome.runtime.sendMessage({ type: 'ADD_TO_DICTIONARY', word });
     customDictionaryWords.add(word.toLowerCase());
     
+    // Update statistics
+    incrementWordsAdded(1).catch(() => {});
+    
+    // Show toast notification
+    showToast(`Added "${word}" to dictionary`, 'success');
+    
     // Re-check all fields
     for (const state of fieldStates.values()) {
       performSpellCheck(state);
     }
   } catch (error) {
     console.error('FSA: Error adding to dictionary:', error);
+    showToast('Failed to add word to dictionary', 'error');
   }
 }
 

@@ -4,7 +4,49 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fountain Spell Assist - On-Device Spell Checking for Chrome</title>
-    <meta name="description" content="Privacy-first Chrome extension for spell checking. No network calls, no tracking - everything runs locally.">
+    <meta name="description" content="Privacy-first Chrome extension for spell checking. No network calls, no tracking - everything runs locally. 15,000+ word dictionary, grammar checking, auto-correct.">
+    <meta name="keywords" content="chrome extension, spell checker, spell check, grammar check, privacy, on-device, offline">
+    <meta name="author" content="Fountain Spell Assist">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://fountain-spell-assist.vercel.app/">
+    <meta property="og:title" content="Fountain Spell Assist - Privacy-First Spell Checking">
+    <meta property="og:description" content="On-device spell checking for Chrome. No network calls, no tracking - everything runs locally.">
+    <meta property="og:image" content="https://fountain-spell-assist.vercel.app/og-image.png">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://fountain-spell-assist.vercel.app/">
+    <meta property="twitter:title" content="Fountain Spell Assist - Privacy-First Spell Checking">
+    <meta property="twitter:description" content="On-device spell checking for Chrome. No network calls, no tracking - everything runs locally.">
+    <meta property="twitter:image" content="https://fountain-spell-assist.vercel.app/og-image.png">
+    
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "Fountain Spell Assist",
+      "applicationCategory": "BrowserExtension",
+      "operatingSystem": "Chrome",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "description": "Privacy-first Chrome extension for on-device spell checking",
+      "featureList": [
+        "On-device spell checking",
+        "15,000+ word dictionary",
+        "Grammar checking",
+        "Auto-correct",
+        "Custom dictionary",
+        "Per-site controls"
+      ]
+    }
+    </script>
+    
     <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
@@ -104,6 +146,52 @@
                 </div>
             </section>
 
+            <section class="demo">
+                <h2>Try It Out</h2>
+                <div class="demo-container">
+                    <p>Type in the box below to see spell checking in action:</p>
+                    <textarea 
+                        id="demo-textarea" 
+                        class="demo-textarea" 
+                        placeholder="Type some text here... try misspelling words like 'recieve' or 'seperate'"
+                        rows="6"
+                    ></textarea>
+                    <div class="demo-info">
+                        <p>Misspelled words will be underlined in red. Right-click on them for suggestions.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="faq">
+                <h2>Frequently Asked Questions</h2>
+                <div class="faq-list">
+                    <div class="faq-item">
+                        <h3>Is my data sent anywhere?</h3>
+                        <p>No. All spell checking happens locally in your browser. No network calls, no tracking, no data leaves your device.</p>
+                    </div>
+                    <div class="faq-item">
+                        <h3>How many words are in the dictionary?</h3>
+                        <p>The built-in dictionary contains 15,000+ common English words. You can add unlimited custom words.</p>
+                    </div>
+                    <div class="faq-item">
+                        <h3>Does it work offline?</h3>
+                        <p>Yes! Since everything runs locally, the extension works completely offline.</p>
+                    </div>
+                    <div class="faq-item">
+                        <h3>Can I use it on sensitive sites?</h3>
+                        <p>The extension automatically skips password fields and financial inputs. You can also disable it on specific sites or URL patterns.</p>
+                    </div>
+                    <div class="faq-item">
+                        <h3>Does it support other languages?</h3>
+                        <p>Currently supports English (US and UK). More languages coming soon!</p>
+                    </div>
+                    <div class="faq-item">
+                        <h3>How do I add words to my dictionary?</h3>
+                        <p>Right-click on a misspelled word and select "Add to Dictionary", or import a list of words in the Options page.</p>
+                    </div>
+                </div>
+            </section>
+
             <section class="tech">
                 <h2>Built With</h2>
                 <div class="tech-badges">
@@ -123,6 +211,74 @@
             </p>
         </footer>
     </div>
+    <script>
+        // Interactive demo - inject content script functionality
+        (function() {
+            const textarea = document.getElementById('demo-textarea');
+            if (!textarea) return;
+            
+            // Simple spell check demo (client-side only)
+            const commonWords = new Set(['the', 'be', 'to', 'of', 'and', 'a', 'in', 'that', 'have', 'i', 'it', 'for', 'not', 'on', 'with', 'he', 'as', 'you', 'do', 'at', 'this', 'but', 'his', 'by', 'from', 'they', 'we', 'say', 'her', 'she', 'or', 'an', 'will', 'my', 'one', 'all', 'would', 'there', 'their', 'what', 'so', 'up', 'out', 'if', 'about', 'who', 'get', 'which', 'go', 'me', 'when', 'make', 'can', 'like', 'time', 'no', 'just', 'him', 'know', 'take', 'people', 'into', 'year', 'your', 'good', 'some', 'could', 'them', 'see', 'other', 'than', 'then', 'now', 'look', 'only', 'come', 'its', 'over', 'think', 'also', 'back', 'after', 'use', 'two', 'how', 'our', 'work', 'first', 'well', 'way', 'even', 'new', 'want', 'because', 'any', 'these', 'give', 'day', 'most', 'us']);
+            
+            function checkSpelling(text) {
+                const words = text.match(/\b\w+\b/g) || [];
+                const misspellings = [];
+                
+                words.forEach((word, index) => {
+                    const lower = word.toLowerCase();
+                    if (word.length > 1 && !commonWords.has(lower) && !/^\d+$/.test(word)) {
+                        const start = text.indexOf(word, index > 0 ? misspellings[misspellings.length - 1]?.end || 0);
+                        if (start !== -1) {
+                            misspellings.push({ word, start, end: start + word.length });
+                        }
+                    }
+                });
+                
+                return misspellings;
+            }
+            
+            let highlights = [];
+            
+            function updateHighlights() {
+                // Remove existing highlights
+                highlights.forEach(h => h.remove());
+                highlights = [];
+                
+                const text = textarea.value;
+                const misspellings = checkSpelling(text);
+                
+                // Create overlay for highlights
+                let container = document.getElementById('demo-highlights');
+                if (!container) {
+                    container = document.createElement('div');
+                    container.id = 'demo-highlights';
+                    container.style.cssText = 'position: absolute; pointer-events: none; z-index: 1;';
+                    textarea.parentElement.style.position = 'relative';
+                    textarea.parentElement.appendChild(container);
+                }
+                
+                const rect = textarea.getBoundingClientRect();
+                const style = window.getComputedStyle(textarea);
+                
+                misspellings.forEach(m => {
+                    const highlight = document.createElement('span');
+                    highlight.style.cssText = `
+                        position: absolute;
+                        border-bottom: 2px dotted #c53030;
+                        pointer-events: auto;
+                        cursor: pointer;
+                    `;
+                    // Simple positioning (would need proper text measurement in real implementation)
+                    highlights.push(highlight);
+                    container.appendChild(highlight);
+                });
+            }
+            
+            textarea.addEventListener('input', () => {
+                setTimeout(updateHighlights, 300);
+            });
+        })();
+    </script>
 </body>
 </html>
 

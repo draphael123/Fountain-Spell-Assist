@@ -14,28 +14,32 @@ import {
   getSiteSettings,
   setSiteSettings,
   getCurrentTabHostname,
+  getStatistics,
 } from '../shared/messaging';
-import type { GlobalSettings, SiteSettings } from '../shared/types';
+import type { GlobalSettings, SiteSettings, Statistics } from '../shared/types';
 
 export function Popup() {
   const [loading, setLoading] = useState(true);
   const [hostname, setHostname] = useState<string>('');
   const [globalSettings, setGlobalSettingsState] = useState<GlobalSettings | null>(null);
   const [siteSettings, setSiteSettingsState] = useState<SiteSettings | null>(null);
+  const [statistics, setStatistics] = useState<Statistics | null>(null);
 
   // Load settings on mount
   useEffect(() => {
     async function load() {
       try {
-        const [host, global, site] = await Promise.all([
+        const [host, global, site, stats] = await Promise.all([
           getCurrentTabHostname().catch(() => ''),
           getGlobalSettings(),
           getCurrentTabHostname().then((h) => getSiteSettings(h)).catch(() => ({ enabled: true })),
+          getStatistics().catch(() => null),
         ]);
         
         setHostname(host);
         setGlobalSettingsState(global);
         setSiteSettingsState(site);
+        setStatistics(stats);
       } catch (error) {
         console.error('Failed to load settings:', error);
       } finally {
@@ -151,6 +155,26 @@ export function Popup() {
           {isActive ? 'Spell checking active' : 'Spell checking paused'}
         </span>
       </div>
+
+      {/* Statistics */}
+      {statistics && (
+        <div className="statistics-section">
+          <div className="statistics-grid">
+            <div className="stat-item">
+              <div className="stat-value">{statistics.wordsChecked.toLocaleString()}</div>
+              <div className="stat-label">Words Checked</div>
+            </div>
+            <div className="stat-item">
+              <div className="stat-value">{statistics.misspellingsFound.toLocaleString()}</div>
+              <div className="stat-label">Misspellings Found</div>
+            </div>
+            <div className="stat-item">
+              <div className="stat-value">{statistics.correctionsMade.toLocaleString()}</div>
+              <div className="stat-label">Corrections Made</div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Footer with options link */}
       <footer className="popup-footer">

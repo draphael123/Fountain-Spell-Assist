@@ -11,6 +11,7 @@ import {
   GlobalSettings,
   SiteSettings,
   DictionaryEntry,
+  Statistics,
 } from './types';
 
 /**
@@ -96,6 +97,20 @@ export async function importDictionary(words: string[]): Promise<number> {
  */
 export async function exportDictionary(): Promise<string[]> {
   return sendMessage({ type: 'EXPORT_DICTIONARY' });
+}
+
+/**
+ * Get statistics
+ */
+export async function getStatistics(): Promise<Statistics> {
+  return sendMessage({ type: 'GET_STATISTICS' });
+}
+
+/**
+ * Reset statistics
+ */
+export async function resetStatistics(): Promise<void> {
+  return sendMessage({ type: 'RESET_STATISTICS' });
 }
 
 /**

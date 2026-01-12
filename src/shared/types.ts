@@ -57,6 +57,8 @@ export type MessageType =
   | 'GET_DICTIONARY'
   | 'IMPORT_DICTIONARY'
   | 'EXPORT_DICTIONARY'
+  | 'GET_STATISTICS'
+  | 'RESET_STATISTICS'
   | 'CHECK_SPELLING'
   | 'SETTINGS_CHANGED';
 
@@ -117,6 +119,16 @@ export interface ExportDictionaryMessage extends BaseMessage {
   type: 'EXPORT_DICTIONARY';
 }
 
+/** Get statistics request */
+export interface GetStatisticsMessage extends BaseMessage {
+  type: 'GET_STATISTICS';
+}
+
+/** Reset statistics request */
+export interface ResetStatisticsMessage extends BaseMessage {
+  type: 'RESET_STATISTICS';
+}
+
 /** Settings changed notification (broadcast to content scripts) */
 export interface SettingsChangedMessage extends BaseMessage {
   type: 'SETTINGS_CHANGED';
@@ -135,6 +147,8 @@ export type ExtensionMessage =
   | GetDictionaryMessage
   | ImportDictionaryMessage
   | ExportDictionaryMessage
+  | GetStatisticsMessage
+  | ResetStatisticsMessage
   | SettingsChangedMessage;
 
 /** Response wrapper */

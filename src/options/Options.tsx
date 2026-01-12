@@ -16,8 +16,10 @@ import {
   removeFromDictionary,
   importDictionary,
   exportDictionary,
+  getStatistics,
+  resetStatistics,
 } from '../shared/messaging';
-import type { GlobalSettings, DictionaryEntry } from '../shared/types';
+import type { GlobalSettings, DictionaryEntry, Statistics } from '../shared/types';
 
 type ModalType = 'import' | 'export' | null;
 type ToastType = { message: string; type: 'success' | 'error' } | null;
@@ -26,22 +28,28 @@ export function Options() {
   const [loading, setLoading] = useState(true);
   const [settings, setSettings] = useState<GlobalSettings | null>(null);
   const [dictionary, setDictionary] = useState<DictionaryEntry[]>([]);
+  const [statistics, setStatistics] = useState<Statistics | null>(null);
   const [newPattern, setNewPattern] = useState('');
-  const [modal, setModal] = useState<ModalType>(null);
+  const [dictionarySearch, setDictionarySearch] = useState('');
+  const [selectedWords, setSelectedWords] = useState<Set<string>>(new Set());
+  const [modal, setModal] = useState<ModalType | 'import-settings' | 'export-settings'>(null);
   const [importText, setImportText] = useState('');
   const [exportText, setExportText] = useState('');
+  const [settingsText, setSettingsText] = useState('');
   const [toast, setToast] = useState<ToastType>(null);
 
   // Load settings and dictionary
   useEffect(() => {
     async function load() {
       try {
-        const [globalSettings, dict] = await Promise.all([
+        const [globalSettings, dict, stats] = await Promise.all([
           getGlobalSettings(),
           getDictionary(),
+          getStatistics().catch(() => null),
         ]);
         setSettings(globalSettings);
         setDictionary(dict);
+        setStatistics(stats);
       } catch (error) {
         console.error('Failed to load:', error);
         showToast('Failed to load settings', 'error');
@@ -159,6 +167,56 @@ export function Options() {
     showToast('Copied to clipboard', 'success');
   }, [exportText, showToast]);
 
+  // Export all settings
+  const exportAllSettings = useCallback(async () => {
+    try {
+      const allSettings = {
+        globalSettings: settings,
+        dictionary: dictionary.map(e => e.word),
+        statistics,
+        exportDate: new Date().toISOString(),
+        version: '1.0.0',
+      };
+      const json = JSON.stringify(allSettings, null, 2);
+      setSettingsText(json);
+      setModal('export-settings');
+    } catch (error) {
+      console.error('Failed to export settings:', error);
+      showToast('Failed to export settings', 'error');
+    }
+  }, [settings, dictionary, statistics, showToast]);
+
+  // Open import settings modal
+  const openImportSettings = useCallback(() => {
+    setSettingsText('');
+    setModal('import-settings');
+  }, []);
+
+  // Handle import settings
+  const handleImportSettings = useCallback(async () => {
+    try {
+      const imported = JSON.parse(settingsText);
+      
+      if (imported.globalSettings) {
+        await setGlobalSettings(imported.globalSettings);
+        setSettings(imported.globalSettings);
+      }
+      
+      if (imported.dictionary && Array.isArray(imported.dictionary)) {
+        const added = await importDictionary(imported.dictionary);
+        const dict = await getDictionary();
+        setDictionary(dict);
+        showToast(`Imported ${added} words`, 'success');
+      }
+      
+      setModal(null);
+      showToast('Settings imported successfully', 'success');
+    } catch (error) {
+      console.error('Failed to import settings:', error);
+      showToast('Invalid settings file', 'error');
+    }
+  }, [settingsText, showToast]);
+
   if (loading) {
     return (
       <div className="loading">
@@ -227,8 +285,78 @@ export function Options() {
               </select>
             </div>
           </div>
+
+          <div className="setting-row">
+            <div className="setting-info">
+              <div className="setting-label">Auto-Correct</div>
+              <div className="setting-description">
+                Automatically correct misspellings when you type space or enter
+              </div>
+            </div>
+            <button
+              className={`toggle-switch ${settings?.autoCorrect ? 'active' : ''}`}
+              onClick={() => updateSettings({ autoCorrect: !settings?.autoCorrect })}
+              aria-label="Toggle auto-correct"
+            />
+          </div>
+
+          <div className="setting-row">
+            <div className="setting-info">
+              <div className="setting-label">Grammar Checking</div>
+              <div className="setting-description">
+                Detect common grammar mistakes (your/you're, its/it's, etc.)
+              </div>
+            </div>
+            <button
+              className={`toggle-switch ${settings?.grammarCheck ? 'active' : ''}`}
+              onClick={() => updateSettings({ grammarCheck: !settings?.grammarCheck })}
+              aria-label="Toggle grammar checking"
+            />
+          </div>
         </div>
       </section>
+
+      {/* Statistics */}
+      {statistics && (
+        <section className="section">
+          <h2 className="section-title">Statistics</h2>
+          <div className="section-card">
+            <div className="statistics-dashboard">
+              <div className="stat-row">
+                <span className="stat-label">Words Checked:</span>
+                <span className="stat-value">{statistics.wordsChecked.toLocaleString()}</span>
+              </div>
+              <div className="stat-row">
+                <span className="stat-label">Misspellings Found:</span>
+                <span className="stat-value">{statistics.misspellingsFound.toLocaleString()}</span>
+              </div>
+              <div className="stat-row">
+                <span className="stat-label">Corrections Made:</span>
+                <span className="stat-value">{statistics.correctionsMade.toLocaleString()}</span>
+              </div>
+              <div className="stat-row">
+                <span className="stat-label">Words Added to Dictionary:</span>
+                <span className="stat-value">{statistics.wordsAdded.toLocaleString()}</span>
+              </div>
+              <div className="stat-actions">
+                <button
+                  className="btn btn-secondary"
+                  onClick={async () => {
+                    if (confirm('Reset all statistics?')) {
+                      await resetStatistics();
+                      const stats = await getStatistics();
+                      setStatistics(stats);
+                      showToast('Statistics reset', 'success');
+                    }
+                  }}
+                >
+                  Reset Statistics
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Custom Dictionary */}
       <section className="section">
@@ -240,13 +368,50 @@ export function Options() {
             </span>
             <div className="dictionary-actions">
               <button className="btn btn-secondary" onClick={openImport}>
-                Import
+                Import Words
               </button>
               <button className="btn btn-secondary" onClick={openExport}>
-                Export
+                Export Words
               </button>
+              <button className="btn btn-secondary" onClick={exportAllSettings}>
+                Export All Settings
+              </button>
+              <button className="btn btn-secondary" onClick={openImportSettings}>
+                Import Settings
+              </button>
+              {selectedWords.size > 0 && (
+                <button
+                  className="btn btn-danger"
+                  onClick={async () => {
+                    if (confirm(`Delete ${selectedWords.size} selected word(s)?`)) {
+                      for (const word of selectedWords) {
+                        await removeWord(word);
+                      }
+                      setSelectedWords(new Set());
+                      const dict = await getDictionary();
+                      setDictionary(dict);
+                      showToast(`Deleted ${selectedWords.size} word(s)`, 'success');
+                    }
+                  }}
+                >
+                  Delete Selected ({selectedWords.size})
+                </button>
+              )}
             </div>
           </div>
+
+          {/* Search */}
+          {dictionary.length > 0 && (
+            <div className="dictionary-search">
+              <input
+                type="text"
+                className="pattern-input"
+                placeholder="Search dictionary..."
+                value={dictionarySearch}
+                onChange={(e) => setDictionarySearch(e.target.value)}
+              />
+            </div>
+          )}
 
           {dictionary.length === 0 ? (
             <div className="dictionary-empty">
@@ -255,18 +420,38 @@ export function Options() {
             </div>
           ) : (
             <div className="dictionary-list">
-              {dictionary.map((entry) => (
-                <div key={entry.word} className="dictionary-item">
-                  <span className="dictionary-word">{entry.word}</span>
-                  <button
-                    className="btn-icon"
-                    onClick={() => removeWord(entry.word)}
-                    aria-label={`Remove ${entry.word}`}
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
+              {dictionary
+                .filter((entry) => 
+                  !dictionarySearch || 
+                  entry.word.toLowerCase().includes(dictionarySearch.toLowerCase())
+                )
+                .map((entry) => (
+                  <div key={entry.word} className="dictionary-item">
+                    <label className="dictionary-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={selectedWords.has(entry.word)}
+                        onChange={(e) => {
+                          const newSelected = new Set(selectedWords);
+                          if (e.target.checked) {
+                            newSelected.add(entry.word);
+                          } else {
+                            newSelected.delete(entry.word);
+                          }
+                          setSelectedWords(newSelected);
+                        }}
+                      />
+                      <span className="dictionary-word">{entry.word}</span>
+                    </label>
+                    <button
+                      className="btn-icon"
+                      onClick={() => removeWord(entry.word)}
+                      aria-label={`Remove ${entry.word}`}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
             </div>
           )}
         </div>

@@ -30,6 +30,13 @@
   border-bottom-style: solid;
 }
 
+/* Focus state for accessibility */
+.fsa-misspelling:focus {
+  outline: 2px solid #f97316;
+  outline-offset: 2px;
+  background-color: rgba(197, 48, 48, 0.12);
+}
+
 /* Context menu container */
 .fsa-context-menu {
   position: fixed;
@@ -79,10 +86,13 @@
   align-items: center;
   gap: 8px;
   transition: background-color 0.1s;
+  outline: none;
 }
 
-.fsa-context-menu-item:hover {
+.fsa-context-menu-item:hover,
+.fsa-context-menu-item:focus {
   background-color: #2a2a2a;
+  outline: none;
 }
 
 /* Suggestion items (first section) */

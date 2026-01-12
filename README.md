@@ -6,13 +6,20 @@ A Chrome extension for on-device spell checking in editable web content. No netw
 
 ## Features
 
-- **On-device spell checking** — Uses a built-in dictionary with ~10,000 common English words
+- **On-device spell checking** — Uses a built-in dictionary with 15,000+ common English words
+- **Grammar checking** — Detects common grammar mistakes (your/you're, its/it's, then/than, etc.)
+- **Auto-correct** — Automatically correct misspellings as you type (optional)
 - **Smart field detection** — Automatically attaches to textareas, inputs, and contenteditable elements
+- **Shadow DOM & iframe support** — Works with modern web apps and embedded content
 - **Privacy-first** — Never sends your text anywhere; all processing is local
 - **Sensitive field protection** — Automatically disabled on password fields, credit card inputs, and other sensitive areas
-- **Custom dictionary** — Add your own words that shouldn't be flagged
+- **Custom dictionary** — Add your own words, import/export, search and bulk operations
 - **Per-site control** — Enable/disable spell checking on specific websites
 - **Pattern-based blocking** — Disable on sites matching patterns (e.g., `*.bank.com`)
+- **Keyboard shortcuts** — Quick toggles (Ctrl+Shift+S, Ctrl+Shift+U, Ctrl+Shift+G)
+- **Statistics tracking** — See how many words you've checked and corrections made
+- **Accessibility** — Full keyboard navigation and screen reader support
+- **Export/Import settings** — Backup and restore all your settings
 
 ## Installation
 
@@ -68,9 +75,19 @@ Access full settings by clicking **Options** in the popup or right-clicking the 
 
 - **Global Enable** — Master on/off switch
 - **Show Underlines** — Toggle highlight visibility
+- **Auto-Correct** — Automatically replace misspellings on space/enter
+- **Grammar Checking** — Detect common grammar mistakes
 - **Language** — Select dictionary language (currently en-US, en-GB)
-- **Custom Dictionary** — View, remove, import, or export your words
+- **Custom Dictionary** — View, search, remove, import, or export your words (with bulk operations)
+- **Statistics Dashboard** — View usage statistics and reset if needed
 - **Disabled Sites** — Add URL patterns to disable spell checking
+- **Export/Import All Settings** — Backup and restore everything
+
+### Keyboard Shortcuts
+
+- **Ctrl+Shift+S** — Toggle spell checking for current site
+- **Ctrl+Shift+U** — Toggle underline visibility
+- **Ctrl+Shift+G** — Toggle grammar checking
 
 ## Project Structure
 
