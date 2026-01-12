@@ -1,13 +1,5 @@
 {
   "version": 2,
-  "buildCommand": "npm run build:extension",
-  "outputDirectory": ".",
-  "routes": [
-    {
-      "src": "/",
-      "dest": "/index.html"
-    }
-  ],
   "headers": [
     {
       "source": "/(.*)",
