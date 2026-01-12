@@ -2,15 +2,6 @@
   "version": 2,
   "buildCommand": "npm run build:extension",
   "outputDirectory": "public",
-  "routes": [
-    {
-      "src": "/fountain-spell-assist.zip",
-      "headers": {
-        "Content-Type": "application/zip",
-        "Content-Disposition": "attachment; filename=\"fountain-spell-assist.zip\""
-      }
-    }
-  ],
   "headers": [
     {
       "source": "/(.*)",
@@ -26,6 +17,19 @@
         {
           "key": "X-XSS-Protection",
           "value": "1; mode=block"
+        }
+      ]
+    },
+    {
+      "source": "/fountain-spell-assist.zip",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/zip"
+        },
+        {
+          "key": "Content-Disposition",
+          "value": "attachment; filename=\"fountain-spell-assist.zip\""
         }
       ]
     }
