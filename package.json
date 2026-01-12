@@ -6,8 +6,9 @@
   "scripts": {
     "dev": "vite build --watch --mode development",
     "build": "npm run icons && vite build && npm run zip",
-    "build:extension": "npm run icons && vite build",
+    "build:extension": "npm run icons && vite build && npm run zip && npm run copy-zip",
     "zip": "node scripts/create-zip.cjs",
+    "copy-zip": "node scripts/copy-zip.cjs",
     "icons": "node scripts/generate-icons.cjs",
     "preview": "vite preview",
     "test": "vitest run",

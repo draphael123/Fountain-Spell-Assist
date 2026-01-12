@@ -2,6 +2,15 @@
   "version": 2,
   "buildCommand": "npm run build:extension",
   "outputDirectory": "public",
+  "routes": [
+    {
+      "src": "/fountain-spell-assist.zip",
+      "headers": {
+        "Content-Type": "application/zip",
+        "Content-Disposition": "attachment; filename=\"fountain-spell-assist.zip\""
+      }
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
