@@ -11,6 +11,7 @@ A Chrome extension for on-device spell checking in editable web content. No netw
 - **Auto-correct** — Automatically correct misspellings as you type (optional)
 - **Smart field detection** — Automatically attaches to textareas, inputs, and contenteditable elements
 - **Shadow DOM & iframe support** — Works with modern web apps and embedded content
+- **Rich editor support** — Enhanced detection for Notion, Slack web, Quill, ProseMirror, and other modern editors
 - **Privacy-first** — Never sends your text anywhere; all processing is local
 - **Sensitive field protection** — Automatically disabled on password fields, credit card inputs, and other sensitive areas
 - **Custom dictionary** — Add your own words, import/export, search and bulk operations
@@ -20,6 +21,21 @@ A Chrome extension for on-device spell checking in editable web content. No netw
 - **Statistics tracking** — See how many words you've checked and corrections made
 - **Accessibility** — Full keyboard navigation and screen reader support
 - **Export/Import settings** — Backup and restore all your settings
+
+## Compatibility
+
+### ✅ Works On:
+- **Notion** (web app in Chrome) - Full support with enhanced editor detection
+- **Slack** (web app in Chrome) - Full support
+- **Google Docs** (web) - Works on contenteditable elements
+- **Most modern web editors** - Quill, ProseMirror, Slate, Draft.js, etc.
+- **Standard form fields** - Inputs, textareas, contenteditable divs
+
+### ❌ Does Not Work On:
+- **Slack Desktop App** - Desktop apps don't support Chrome extensions
+- **Notion Desktop App** - Desktop apps don't support Chrome extensions
+- **Native applications** - Only works in Chrome browser
+- **Some iframes with CORS restrictions** - Limited by browser security
 
 ## Installation
 

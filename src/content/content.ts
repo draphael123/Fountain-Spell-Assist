@@ -217,6 +217,7 @@ function isSensitiveField(element: HTMLElement): boolean {
 
 /**
  * Scan the page for editable fields (including shadow DOM and iframes)
+ * Enhanced for complex editors like Notion, Slack, etc.
  */
 function scanForEditableFields(): void {
   // Find input and textarea elements
@@ -227,11 +228,37 @@ function scanForEditableFields(): void {
     }
   });
   
-  // Find contenteditable elements
-  const contentEditables = document.querySelectorAll('[contenteditable="true"]');
+  // Find contenteditable elements (including those that might be dynamically set)
+  const contentEditables = document.querySelectorAll('[contenteditable="true"], [contenteditable=""], [contenteditable]');
   contentEditables.forEach((el) => {
     if (el instanceof HTMLElement && isEditableField(el)) {
       attachToField(el);
+    }
+  });
+  
+  // Also check for common editor class names (Notion, Slack, etc.)
+  const editorSelectors = [
+    '[role="textbox"]',
+    '[data-placeholder]',
+    '.notion-page-content',
+    '.ql-editor', // Quill editor
+    '.ProseMirror', // ProseMirror (used by many editors)
+    '[data-slate-editor]', // Slate editor
+    '.DraftEditor-root', // Draft.js
+  ];
+  
+  editorSelectors.forEach((selector) => {
+    try {
+      const editors = document.querySelectorAll(selector);
+      editors.forEach((el) => {
+        if (el instanceof HTMLElement && (el.isContentEditable || el.querySelector('[contenteditable]'))) {
+          if (isEditableField(el)) {
+            attachToField(el);
+          }
+        }
+      });
+    } catch (e) {
+      // Invalid selector, skip
     }
   });
   
