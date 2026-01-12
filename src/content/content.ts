@@ -53,8 +53,15 @@ async function initialize(): Promise<void> {
   await loadSettings();
   await loadCustomDictionary();
   
+  console.log('FSA: Settings loaded', { 
+    globalEnabled: globalSettings.enabled, 
+    siteEnabled: siteSettings.enabled,
+    showUnderlines: globalSettings.showUnderlines,
+    hostname: window.location.hostname
+  });
+  
   if (!isEnabled()) {
-    console.log('FSA: Disabled for this site');
+    console.log('FSA: Disabled for this site - check popup to enable');
     return;
   }
   
@@ -66,7 +73,16 @@ async function initialize(): Promise<void> {
   // Scan existing editable fields
   scanForEditableFields();
   
-  console.log('FSA: Content script initialized');
+  const fieldCount = fieldStates.size;
+  console.log(`FSA: Content script initialized - found ${fieldCount} editable field(s)`);
+  
+  // If no fields found, try again after a delay (for dynamic content)
+  if (fieldCount === 0) {
+    setTimeout(() => {
+      scanForEditableFields();
+      console.log(`FSA: Re-scan complete - found ${fieldStates.size} editable field(s)`);
+    }, 1000);
+  }
 }
 
 /**
@@ -334,6 +350,8 @@ function scanIframes(): void {
 function attachToField(element: HTMLElement): void {
   if (fieldStates.has(element)) return;
   
+  console.log('FSA: Attaching to field', element.tagName, element.className || element.id || 'unnamed');
+  
   const state: FieldState = {
     element,
     lastText: '',
@@ -482,7 +500,12 @@ function getFieldText(element: HTMLElement): string {
  * Perform spell checking on a field
  */
 async function performSpellCheck(state: FieldState): Promise<void> {
-  if (!isEnabled() || !globalSettings.showUnderlines) {
+  if (!isEnabled()) {
+    clearHighlights(state);
+    return;
+  }
+  
+  if (!globalSettings.showUnderlines) {
     clearHighlights(state);
     return;
   }
@@ -514,6 +537,11 @@ async function performSpellCheck(state: FieldState): Promise<void> {
   state.misspellings = allMisspellings.filter(
     (m) => !ignoredWords.has(m.word.toLowerCase())
   );
+  
+  // Debug logging
+  if (state.misspellings.length > 0) {
+    console.log('FSA: Found misspellings:', state.misspellings.map(m => m.word));
+  }
   
   // Update statistics
   if (state.misspellings.length > 0) {
