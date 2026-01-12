@@ -50,15 +50,84 @@
     <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <span class="nav-logo">🖋</span>
+                <span class="nav-title">Fountain Spell Assist</span>
+            </div>
+            <div class="nav-links">
+                <a href="#features" class="nav-link">Features</a>
+                <a href="#download" class="nav-link">Download</a>
+                <a href="#how-it-works" class="nav-link">How It Works</a>
+                <a href="#faq" class="nav-link">FAQ</a>
+                <div class="nav-dropdown">
+                    <button class="nav-link nav-settings-btn" id="settings-btn">
+                        ⚙️ Settings
+                        <span class="dropdown-arrow">▼</span>
+                    </button>
+                    <div class="dropdown-menu" id="settings-menu">
+                        <div class="dropdown-section">
+                            <h4>Theme</h4>
+                            <label class="setting-item">
+                                <input type="radio" name="theme" value="dark" checked>
+                                <span>Dark (Default)</span>
+                            </label>
+                            <label class="setting-item">
+                                <input type="radio" name="theme" value="light">
+                                <span>Light</span>
+                            </label>
+                            <label class="setting-item">
+                                <input type="radio" name="theme" value="auto">
+                                <span>Auto (System)</span>
+                            </label>
+                        </div>
+                        <div class="dropdown-section">
+                            <h4>Language</h4>
+                            <label class="setting-item">
+                                <select id="language-select">
+                                    <option value="en">English</option>
+                                    <option value="es">Español</option>
+                                    <option value="fr">Français</option>
+                                    <option value="de">Deutsch</option>
+                                </select>
+                            </label>
+                        </div>
+                        <div class="dropdown-section">
+                            <h4>Preferences</h4>
+                            <label class="setting-item">
+                                <input type="checkbox" id="animations-toggle" checked>
+                                <span>Enable Animations</span>
+                            </label>
+                            <label class="setting-item">
+                                <input type="checkbox" id="analytics-toggle">
+                                <span>Analytics (Privacy-friendly)</span>
+                            </label>
+                        </div>
+                        <div class="dropdown-footer">
+                            <button class="btn-reset" id="reset-settings">Reset to Defaults</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button class="nav-mobile-toggle" id="mobile-toggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </nav>
+
     <div class="container">
-        <header class="hero">
+        <header class="hero" id="home">
             <div class="logo">🖋</div>
             <h1 class="title">Fountain Spell Assist</h1>
             <p class="subtitle">On-device spell checking for Chrome. Privacy-first, no tracking.</p>
         </header>
 
         <main>
-            <section class="features">
+            <section class="features" id="features">
                 <div class="feature-grid">
                     <div class="feature-card">
                         <div class="feature-icon">🔒</div>
@@ -83,7 +152,7 @@
                 </div>
             </section>
 
-            <section class="download">
+            <section class="download" id="download">
                 <h2>Download & Install</h2>
                 <div class="download-options">
                     <div class="download-card primary">
@@ -122,7 +191,7 @@
                 </div>
             </section>
 
-            <section class="screenshots">
+            <section class="screenshots" id="how-it-works">
                 <h2>How It Works</h2>
                 <div class="screenshot-grid">
                     <div class="screenshot-item">
@@ -177,7 +246,7 @@
                 </div>
             </section>
 
-            <section class="faq">
+            <section class="faq" id="faq">
                 <h2>Frequently Asked Questions</h2>
                 <div class="faq-list">
                     <div class="faq-item">
@@ -227,6 +296,123 @@
         </footer>
     </div>
     <script>
+        // Settings Menu Functionality
+        (function() {
+            const settingsBtn = document.getElementById('settings-btn');
+            const settingsMenu = document.getElementById('settings-menu');
+            const mobileToggle = document.getElementById('mobile-toggle');
+            const navLinks = document.querySelector('.nav-links');
+            
+            // Toggle settings menu
+            if (settingsBtn && settingsMenu) {
+                settingsBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    settingsMenu.classList.toggle('show');
+                });
+                
+                // Close menu when clicking outside
+                document.addEventListener('click', (e) => {
+                    if (!settingsBtn.contains(e.target) && !settingsMenu.contains(e.target)) {
+                        settingsMenu.classList.remove('show');
+                    }
+                });
+            }
+            
+            // Mobile menu toggle
+            if (mobileToggle && navLinks) {
+                mobileToggle.addEventListener('click', () => {
+                    navLinks.classList.toggle('mobile-open');
+                });
+            }
+            
+            // Theme settings
+            const themeRadios = document.querySelectorAll('input[name="theme"]');
+            const currentTheme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', currentTheme);
+            
+            themeRadios.forEach(radio => {
+                if (radio.value === currentTheme) radio.checked = true;
+                radio.addEventListener('change', (e) => {
+                    const theme = e.target.value;
+                    document.documentElement.setAttribute('data-theme', theme);
+                    localStorage.setItem('theme', theme);
+                    applyTheme(theme);
+                });
+            });
+            
+            function applyTheme(theme) {
+                if (theme === 'auto') {
+                    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                    theme = prefersDark ? 'dark' : 'light';
+                }
+                document.documentElement.setAttribute('data-theme', theme);
+            }
+            
+            // Language settings
+            const languageSelect = document.getElementById('language-select');
+            if (languageSelect) {
+                const savedLang = localStorage.getItem('language') || 'en';
+                languageSelect.value = savedLang;
+                languageSelect.addEventListener('change', (e) => {
+                    localStorage.setItem('language', e.target.value);
+                    // Language change would trigger translation here
+                });
+            }
+            
+            // Animation toggle
+            const animationsToggle = document.getElementById('animations-toggle');
+            if (animationsToggle) {
+                const animationsEnabled = localStorage.getItem('animations') !== 'false';
+                animationsToggle.checked = animationsEnabled;
+                animationsToggle.addEventListener('change', (e) => {
+                    localStorage.setItem('animations', e.target.checked);
+                    document.documentElement.setAttribute('data-animations', e.target.checked);
+                });
+            }
+            
+            // Analytics toggle
+            const analyticsToggle = document.getElementById('analytics-toggle');
+            if (analyticsToggle) {
+                const analyticsEnabled = localStorage.getItem('analytics') === 'true';
+                analyticsToggle.checked = analyticsEnabled;
+                analyticsToggle.addEventListener('change', (e) => {
+                    localStorage.setItem('analytics', e.target.checked);
+                });
+            }
+            
+            // Reset settings
+            const resetBtn = document.getElementById('reset-settings');
+            if (resetBtn) {
+                resetBtn.addEventListener('click', () => {
+                    if (confirm('Reset all settings to defaults?')) {
+                        localStorage.clear();
+                        location.reload();
+                    }
+                });
+            }
+            
+            // Smooth scroll for anchor links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    const href = this.getAttribute('href');
+                    if (href === '#') return;
+                    e.preventDefault();
+                    const target = document.querySelector(href);
+                    if (target) {
+                        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        // Close mobile menu if open
+                        if (navLinks) navLinks.classList.remove('mobile-open');
+                    }
+                });
+            });
+            
+            // Apply saved settings on load
+            applyTheme(currentTheme);
+            if (animationsToggle) {
+                document.documentElement.setAttribute('data-animations', animationsToggle.checked);
+            }
+        })();
+        
         // Interactive demo - inject content script functionality
         (function() {
             const textarea = document.getElementById('demo-textarea');
