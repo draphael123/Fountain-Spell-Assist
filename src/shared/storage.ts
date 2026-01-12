@@ -11,9 +11,11 @@ import {
   GlobalSettings,
   SiteSettings,
   DictionaryEntry,
+  Statistics,
   STORAGE_KEYS,
   DEFAULT_GLOBAL_SETTINGS,
   DEFAULT_SITE_SETTINGS,
+  DEFAULT_STATISTICS,
 } from './types';
 
 /**
@@ -192,5 +194,23 @@ export async function isSpellCheckActiveForSite(hostname: string): Promise<boole
   // Check site-specific settings
   const siteSettings = await getSiteSettings(hostname);
   return siteSettings.enabled;
+}
+
+/**
+ * Get statistics
+ */
+export async function getStatistics(): Promise<Statistics> {
+  const result = await chrome.storage.sync.get(STORAGE_KEYS.STATISTICS);
+  return { ...DEFAULT_STATISTICS, ...result[STORAGE_KEYS.STATISTICS] };
+}
+
+/**
+ * Update statistics
+ */
+export async function updateStatistics(updates: Partial<Statistics>): Promise<Statistics> {
+  const current = await getStatistics();
+  const updated = { ...current, ...updates };
+  await chrome.storage.sync.set({ [STORAGE_KEYS.STATISTICS]: updated });
+  return updated;
 }
 

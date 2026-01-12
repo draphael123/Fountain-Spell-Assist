@@ -14,6 +14,10 @@ export interface GlobalSettings {
   language: string;
   /** URL patterns where extension should be disabled (e.g., "*.bank.com") */
   disabledPatterns: string[];
+  /** Enable auto-correct (automatically replace on space/enter) */
+  autoCorrect: boolean;
+  /** Enable basic grammar checking */
+  grammarCheck: boolean;
 }
 
 /** Per-site settings stored in chrome.storage.sync */
@@ -140,12 +144,36 @@ export interface MessageResponse<T = unknown> {
   error?: string;
 }
 
+/** Statistics tracking */
+export interface Statistics {
+  /** Total words checked */
+  wordsChecked: number;
+  /** Total misspellings found */
+  misspellingsFound: number;
+  /** Total corrections made */
+  correctionsMade: number;
+  /** Words added to dictionary */
+  wordsAdded: number;
+  /** Last reset timestamp */
+  lastReset: number;
+}
+
 /** Storage keys */
 export const STORAGE_KEYS = {
   GLOBAL_SETTINGS: 'globalSettings',
   SITE_SETTINGS_PREFIX: 'site:',
   CUSTOM_DICTIONARY: 'customDictionary',
+  STATISTICS: 'statistics',
 } as const;
+
+/** Default statistics */
+export const DEFAULT_STATISTICS: Statistics = {
+  wordsChecked: 0,
+  misspellingsFound: 0,
+  correctionsMade: 0,
+  wordsAdded: 0,
+  lastReset: Date.now(),
+};
 
 /** Default global settings */
 export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
@@ -153,6 +181,8 @@ export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
   showUnderlines: true,
   language: 'en-US',
   disabledPatterns: [],
+  autoCorrect: false,
+  grammarCheck: false,
 };
 
 /** Default site settings */
