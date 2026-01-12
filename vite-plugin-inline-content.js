@@ -12,9 +12,14 @@ export default function inlineContentScript() {
         (chunk) => chunk.type === 'chunk' && chunk.isEntry && chunk.name === 'content'
       );
       
-      if (!contentEntry) return;
+      if (!contentEntry) {
+        console.warn('FSA Plugin: content.js entry not found');
+        return;
+      }
       
-      // Find all chunks that content.js depends on (including vendor chunks)
+      console.log('FSA Plugin: Found content.js entry, processing...');
+      
+      // Find all chunks that content.js depends on
       const chunksToInline = new Set();
       const visited = new Set();
       
@@ -22,80 +27,97 @@ export default function inlineContentScript() {
         if (visited.has(fileName)) return;
         visited.add(fileName);
         
+        // Find chunk by fileName or by matching name
         const chunk = Object.values(bundle).find(
-          (c) => c.type === 'chunk' && (c.fileName === fileName || c.name === fileName)
+          (c) => c.type === 'chunk' && (c.fileName === fileName || c.name === fileName || fileName.includes(c.fileName) || c.fileName.includes(fileName))
         );
         
-        if (chunk) {
+        if (chunk && chunk.fileName !== contentEntry.fileName) {
           chunksToInline.add(chunk.fileName);
+          console.log(`FSA Plugin: Will inline ${chunk.fileName}`);
           
-          // Collect imports
-          if (chunk.imports) {
+          // Collect all its imports recursively
+          if (chunk.imports && chunk.imports.length > 0) {
             chunk.imports.forEach((imp) => {
               collectDependencies(imp);
-            });
-          }
-          
-          // Also check dynamic imports in code
-          const dynamicImports = chunk.code.match(/import\(['"](.*?)['"]\)/g);
-          if (dynamicImports) {
-            dynamicImports.forEach((imp) => {
-              const path = imp.match(/['"](.*?)['"]/)?.[1];
-              if (path) {
-                const resolvedChunk = Object.values(bundle).find(
-                  (c) => c.type === 'chunk' && (c.fileName.includes(path) || c.name?.includes(path))
-                );
-                if (resolvedChunk) {
-                  collectDependencies(resolvedChunk.fileName);
-                }
-              }
             });
           }
         }
       }
       
-      collectDependencies(contentEntry.fileName);
+      // Start collecting from content.js imports
+      if (contentEntry.imports && contentEntry.imports.length > 0) {
+        contentEntry.imports.forEach((imp) => {
+          collectDependencies(imp);
+        });
+      }
+      
+      // Also check for ANY chunks in assets folder that content.js might import
+      Object.values(bundle).forEach((chunk) => {
+        if (chunk.type === 'chunk' && chunk.fileName.startsWith('assets/')) {
+          // Check if content.js code references this chunk
+          if (contentEntry.code.includes(chunk.fileName) || 
+              contentEntry.code.includes(chunk.name || '')) {
+            chunksToInline.add(chunk.fileName);
+            console.log(`FSA Plugin: Will inline referenced chunk ${chunk.fileName}`);
+          }
+        }
+      });
+      
+      // Also find chunks by checking import statements in content.js code
+      const importMatches = contentEntry.code.matchAll(/from\s+['"](\.\/assets\/[^'"]+)['"]/g);
+      for (const match of importMatches) {
+        const importPath = match[1];
+        const chunk = Object.values(bundle).find(
+          (c) => c.type === 'chunk' && c.fileName.includes(importPath.replace('./assets/', '').split('.')[0])
+        );
+        if (chunk) {
+          chunksToInline.add(chunk.fileName);
+          console.log(`FSA Plugin: Found import ${importPath}, will inline ${chunk.fileName}`);
+        }
+      }
       
       // Merge all chunks into content.js
       let mergedCode = contentEntry.code;
-      const importsToRemove = new Set();
       
+      // First, remove all import statements from content.js
+      mergedCode = mergedCode.replace(/^import\s+.*?from\s+['"].*?['"];?\s*$/gm, '');
+      mergedCode = mergedCode.replace(/import\s+.*?from\s+['"].*?['"];?\s*/g, '');
+      
+      // Now inline all dependent chunks
       chunksToInline.forEach((fileName) => {
-        if (fileName === contentEntry.fileName) return;
-        
         const chunk = Object.values(bundle).find(
           (c) => c.type === 'chunk' && c.fileName === fileName
         );
         
         if (chunk) {
-          // Remove import statements from content.js that reference this chunk
-          const importRegex = new RegExp(`import\\s+.*?from\\s+['"]\\.?/?${fileName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}['"];?\\s*`, 'gm');
-          mergedCode = mergedCode.replace(importRegex, '');
-          importsToRemove.add(fileName);
-          
-          // Inline the chunk code (remove its imports too)
           let chunkCode = chunk.code;
-          if (chunk.imports) {
-            chunk.imports.forEach((imp) => {
-              const impRegex = new RegExp(`import\\s+.*?from\\s+['"]\\.?/?${imp.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}['"];?\\s*`, 'gm');
-              chunkCode = chunkCode.replace(impRegex, '');
-            });
-          }
           
-          mergedCode += '\n' + chunkCode;
+          // Remove import statements from chunk code
+          chunkCode = chunkCode.replace(/^import\s+.*?from\s+['"].*?['"];?\s*$/gm, '');
+          chunkCode = chunkCode.replace(/import\s+.*?from\s+['"].*?['"];?\s*/g, '');
+          
+          // Remove export statements and make them available
+          chunkCode = chunkCode.replace(/^export\s+/gm, '');
+          
+          mergedCode = '\n' + chunkCode + '\n' + mergedCode;
           
           // Delete the chunk
           delete bundle[fileName];
+          console.log(`FSA Plugin: Inlined and removed ${fileName}`);
         }
       });
       
-      // Remove all import statements from content.js
+      // Final cleanup - remove any remaining import/export statements
       mergedCode = mergedCode.replace(/^import\s+.*?from\s+['"].*?['"];?\s*$/gm, '');
+      mergedCode = mergedCode.replace(/^export\s+.*?from\s+['"].*?['"];?\s*$/gm, '');
       
-      // Update content.js with merged code
+      // Update content.js
       contentEntry.code = mergedCode;
       contentEntry.imports = [];
       contentEntry.dynamicImports = [];
+      
+      console.log('FSA Plugin: Content script inlined successfully');
     },
   };
 }

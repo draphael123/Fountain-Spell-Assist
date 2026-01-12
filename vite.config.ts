@@ -90,7 +90,12 @@ export default defineConfig({
           }
           return 'assets/[name]-[hash][extname]';
         },
-        manualChunks: undefined, // Let Vite handle chunking automatically
+        manualChunks: (id) => {
+          // Force content script and all its dependencies into one chunk
+          if (id.includes('src/content/') || id.includes('src/shared/')) {
+            return 'content';
+          }
+        },
       },
     },
     minify: false,
