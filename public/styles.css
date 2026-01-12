@@ -388,6 +388,29 @@ body {
   text-align: center;
 }
 
+.screenshot-container {
+  position: relative;
+  margin-bottom: 20px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-md);
+}
+
+.screenshot-image {
+  width: 100%;
+  height: auto;
+  display: block;
+  aspect-ratio: 16/10;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.screenshot-item:hover .screenshot-image {
+  transform: scale(1.02);
+}
+
 .screenshot-placeholder {
   background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-tertiary) 100%);
   border: 1px solid var(--border);
@@ -396,7 +419,6 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 20px;
   color: var(--text-muted);
   font-size: 18px;
   font-weight: 500;
