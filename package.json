@@ -1,0 +1,30 @@
+{
+  "name": "fountain-spell-assist",
+  "version": "1.0.0",
+  "description": "A Chrome extension for on-device spell checking",
+  "type": "module",
+  "scripts": {
+    "dev": "vite build --watch --mode development",
+    "build": "npm run icons && vite build && npm run zip",
+    "build:extension": "npm run icons && vite build",
+    "zip": "node scripts/create-zip.cjs",
+    "icons": "node scripts/generate-icons.cjs",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.260",
+    "@types/react": "^18.2.55",
+    "@types/react-dom": "^18.2.19",
+    "@vitejs/plugin-react": "^4.2.1",
+    "typescript": "^5.3.3",
+    "vite": "^5.1.0",
+    "vitest": "^1.2.2"
+  }
+}
+

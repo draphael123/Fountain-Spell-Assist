@@ -1,0 +1,158 @@
+/**
+ * Fountain Spell Assist - Content Script Styles
+ * 
+ * These styles handle:
+ * - Misspelling underline highlights (red wavy/dotted underlines)
+ * - Custom context menu positioning and appearance
+ * - Mirror overlay positioning for textarea/input fields
+ */
+
+/* Container for highlight overlays */
+.fsa-highlight-container {
+  position: absolute;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 2147483640;
+}
+
+/* Individual misspelled word highlight */
+.fsa-misspelling {
+  position: absolute;
+  border-bottom: 2px dotted #c53030;
+  pointer-events: auto;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+/* Hover state for misspelled words */
+.fsa-misspelling:hover {
+  background-color: rgba(197, 48, 48, 0.08);
+  border-bottom-style: solid;
+}
+
+/* Context menu container */
+.fsa-context-menu {
+  position: fixed;
+  z-index: 2147483647;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 6px;
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.05);
+  min-width: 140px;
+  max-width: 200px;
+  padding: 4px 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  font-size: 13px;
+  color: #e0e0e0;
+  animation: fsa-fade-in 0.1s ease-out;
+}
+
+@keyframes fsa-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Menu section label */
+.fsa-context-menu-label {
+  padding: 6px 12px 4px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #888;
+  user-select: none;
+}
+
+/* Menu item */
+.fsa-context-menu-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.1s;
+}
+
+.fsa-context-menu-item:hover {
+  background-color: #2a2a2a;
+}
+
+/* Suggestion items (first section) */
+.fsa-context-menu-suggestion {
+  font-weight: 500;
+  color: #fff;
+}
+
+.fsa-context-menu-suggestion:hover {
+  background-color: #3b82f6;
+}
+
+/* Divider between sections */
+.fsa-context-menu-divider {
+  height: 1px;
+  background: #333;
+  margin: 4px 0;
+}
+
+/* Action items (Ignore, Add to Dictionary) */
+.fsa-context-menu-action {
+  color: #aaa;
+  font-size: 12px;
+}
+
+.fsa-context-menu-action:hover {
+  color: #fff;
+}
+
+/* Icon in menu items */
+.fsa-context-menu-icon {
+  width: 14px;
+  height: 14px;
+  opacity: 0.7;
+}
+
+/* Original word display at top of menu */
+.fsa-context-menu-word {
+  padding: 8px 12px;
+  font-weight: 600;
+  color: #c53030;
+  border-bottom: 1px solid #333;
+  margin-bottom: 4px;
+  word-break: break-all;
+}
+
+/* No suggestions message */
+.fsa-context-menu-empty {
+  padding: 8px 12px;
+  color: #666;
+  font-style: italic;
+  font-size: 12px;
+}
+
+/* Mirror div for textarea/input overlay positioning */
+.fsa-mirror {
+  position: absolute;
+  visibility: hidden;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Inline highlight for contenteditable */
+.fsa-inline-highlight {
+  text-decoration: underline;
+  text-decoration-color: #c53030;
+  text-decoration-style: wavy;
+  text-decoration-thickness: 1.5px;
+  cursor: pointer;
+}
+
