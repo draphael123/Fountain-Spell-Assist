@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
 import { copyFileSync, mkdirSync, existsSync, readdirSync } from 'fs';
+import inlineContentScript from './vite-plugin-inline-content.js';
 
 /**
  * Vite configuration for Fountain Spell Assist Chrome Extension
@@ -65,7 +66,7 @@ function copyPublicFiles() {
 }
 
 export default defineConfig({
-  plugins: [react(), copyPublicFiles()],
+  plugins: [react(), copyPublicFiles(), inlineContentScript()],
   build: {
     outDir: 'dist',
     emptyOutDir: true,
@@ -89,6 +90,7 @@ export default defineConfig({
           }
           return 'assets/[name]-[hash][extname]';
         },
+        manualChunks: undefined, // Let Vite handle chunking automatically
       },
     },
     minify: false,
