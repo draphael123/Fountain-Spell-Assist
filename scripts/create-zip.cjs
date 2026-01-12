@@ -27,12 +27,12 @@ try {
   
   if (isWindows) {
     // Use PowerShell Compress-Archive on Windows
-    const distPath = path.resolve(distDir);
-    const zipName = path.basename(zipPath);
+    const distPath = path.resolve(distDir).replace(/\\/g, '/');
+    const zipPathEscaped = zipPath.replace(/\\/g, '/');
     
-    // Create zip excluding source maps
-    const psCommand = `$files = Get-ChildItem -Path "${distPath}" -File | Where-Object { $_.Extension -ne '.map' }; $files | Compress-Archive -DestinationPath "${zipPath}" -Force`;
-    execSync(`powershell -Command "${psCommand}"`, { stdio: 'inherit' });
+    // Create zip excluding source maps - use single quotes to handle spaces
+    const psScript = `$distPath = '${distPath}'; $zipPath = '${zipPathEscaped}'; $files = Get-ChildItem -Path $distPath -Recurse -File | Where-Object { $_.Extension -ne '.map' -and $_.FullName -notlike '*.map' }; $files | Compress-Archive -DestinationPath $zipPath -Force`;
+    execSync(`powershell -Command "${psScript}"`, { stdio: 'inherit' });
   } else {
     // Use zip command on Unix-like systems
     process.chdir(distDir);
