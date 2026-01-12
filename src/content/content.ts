@@ -47,41 +47,55 @@ let ignoredWords: Set<string> = new Set(); // Session-only ignores
 // ============================================================================
 
 async function initialize(): Promise<void> {
-  console.log('FSA: Content script initializing');
+  console.log('FSA: Content script initializing on', window.location.hostname);
   
-  // Load settings
-  await loadSettings();
-  await loadCustomDictionary();
-  
-  console.log('FSA: Settings loaded', { 
-    globalEnabled: globalSettings.enabled, 
-    siteEnabled: siteSettings.enabled,
-    showUnderlines: globalSettings.showUnderlines,
-    hostname: window.location.hostname
-  });
-  
-  if (!isEnabled()) {
-    console.log('FSA: Disabled for this site - check popup to enable');
-    return;
-  }
-  
-  // Set up observers and listeners
-  setupMutationObserver();
-  setupEventListeners();
-  setupKeyboardShortcuts();
-  
-  // Scan existing editable fields
-  scanForEditableFields();
-  
-  const fieldCount = fieldStates.size;
-  console.log(`FSA: Content script initialized - found ${fieldCount} editable field(s)`);
-  
-  // If no fields found, try again after a delay (for dynamic content)
-  if (fieldCount === 0) {
-    setTimeout(() => {
-      scanForEditableFields();
-      console.log(`FSA: Re-scan complete - found ${fieldStates.size} editable field(s)`);
-    }, 1000);
+  try {
+    // Load settings
+    await loadSettings();
+    await loadCustomDictionary();
+    
+    console.log('FSA: Settings loaded', { 
+      globalEnabled: globalSettings.enabled, 
+      siteEnabled: siteSettings.enabled,
+      showUnderlines: globalSettings.showUnderlines,
+      hostname: window.location.hostname
+    });
+    
+    if (!isEnabled()) {
+      console.log('FSA: Disabled for this site - check popup to enable');
+      console.log('FSA: Global enabled:', globalSettings.enabled, 'Site enabled:', siteSettings.enabled);
+      return;
+    }
+    
+    // Set up observers and listeners
+    setupMutationObserver();
+    setupEventListeners();
+    setupKeyboardShortcuts();
+    
+    // Scan existing editable fields
+    scanForEditableFields();
+    
+    const fieldCount = fieldStates.size;
+    console.log(`FSA: Content script initialized - found ${fieldCount} editable field(s)`);
+    
+    // If no fields found, try again after a delay (for dynamic content like Slack)
+    if (fieldCount === 0) {
+      console.log('FSA: No fields found initially, will retry in 1s, 3s, and 5s...');
+      setTimeout(() => {
+        scanForEditableFields();
+        console.log(`FSA: Re-scan 1s - found ${fieldStates.size} editable field(s)`);
+      }, 1000);
+      setTimeout(() => {
+        scanForEditableFields();
+        console.log(`FSA: Re-scan 3s - found ${fieldStates.size} editable field(s)`);
+      }, 3000);
+      setTimeout(() => {
+        scanForEditableFields();
+        console.log(`FSA: Re-scan 5s - found ${fieldStates.size} editable field(s)`);
+      }, 5000);
+    }
+  } catch (error) {
+    console.error('FSA: Initialization error:', error);
   }
 }
 
